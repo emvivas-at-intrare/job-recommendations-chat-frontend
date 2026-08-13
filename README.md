@@ -1,2 +1,2 @@
-# job-reccomendations-chat-frontend
+# job-recommendations-chat-frontend
 Frontend for Job Recommendations Chat app.
