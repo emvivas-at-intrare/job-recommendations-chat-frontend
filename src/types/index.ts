@@ -35,6 +35,7 @@ export interface Message {
   role: Role;
   content: string;
   recommendations?: Recommendation[] | null;
+  candidateData?: CandidateData | null;
   timestamp: string;
   model?: string;
 }
