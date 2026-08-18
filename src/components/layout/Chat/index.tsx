@@ -1,12 +1,13 @@
 import { useState, useRef, useEffect } from "react";
 import type { ChangeEvent, SyntheticEvent } from "react";
-import type { Message } from "../../../types/chat";
+import type { Message, ChatResponseDTO } from "../../../types";
+import API from "../../../services/API";
 import Header from "../../chat/Header";
 import type { HeaderProps } from "../../chat/Header";
-import MessageList from "../../chat/MessageList";
-import type { MessageListProps } from "../../chat/MessageList";
+import MessageStack from "../../chat/Message/Stack";
+import type { MessageStackProps } from "../../chat/Message/Stack";
 import Input from "../../chat/Input";
-import type { InputPŕops } from "../../chat/Input";
+import type { InputProps } from "../../chat/Input";
 
 interface ChatProps extends HeaderProps {}
 
@@ -15,7 +16,8 @@ export default function Chat({ onOpenSidebar, onOpenSettings }: ChatProps) {
     {
       id: "1",
       role: "assistant",
-      content: "Hola, ¿cómo puedo ayudarte hoy?",
+      content:
+        "¡Hola! Cuéntanos un poco sobre ti, tus habilidades y qué tipo de vacante te interesa.",
       timestamp: new Date().toISOString(),
       model: "gpt-5-nano",
     },
@@ -46,16 +48,18 @@ export default function Chat({ onOpenSidebar, onOpenSettings }: ChatProps) {
     e?: SyntheticEvent<HTMLFormElement, SubmitEvent>,
   ) => {
     e?.preventDefault();
-    if (!input.trim()) return;
+    const sanitizedInput: string = input.trim();
+    if (!sanitizedInput) return;
 
     // Show user message
-    const newUserMsg: Message = {
+    const newUserMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: input,
+      content: sanitizedInput,
       timestamp: new Date().toISOString(),
     };
-    setMessages((prev) => [...prev, newUserMsg]);
+    const updatedMessages = [...messages, newUserMessage];
+    setMessages(updatedMessages);
     setInput("");
     setIsTyping(true);
 
@@ -63,32 +67,51 @@ export default function Chat({ onOpenSidebar, onOpenSettings }: ChatProps) {
       textareaRef.current.style.height = "auto";
     }
 
-    // Backend request
-    setTimeout(() => {
+    try {
+      const response = await API.post<ChatResponseDTO>("/candidate-chat", {
+        model: selectedModel,
+        systemPrompt: localStorage.getItem("system-prompt") || "",
+        messages: updatedMessages.map(({ role, content, recommendations }) => ({
+          role,
+          content,
+          recommendations,
+        })),
+      });
+      const data = response.data;
       const newAiMsg: Message = {
         id: (Date.now() + 1).toString(),
         role: "assistant",
-        content: `Esta es una respuesta simulada del backend para: "${newUserMsg.content}".`,
+        content: data.reply,
+        recommendations: data.recommendations,
         timestamp: new Date().toISOString(),
         model: selectedModel,
       };
       setMessages((prev) => [...prev, newAiMsg]);
+    } catch (error) {
+      console.error("Error al comunicarse con el backend:", error);
+      const errorMsg: Message = {
+        id: (Date.now() + 1).toString(),
+        role: "assistant",
+        content:
+          "Lo siento, ocurrió un error al procesar tu mensaje con el servidor.",
+        timestamp: new Date().toISOString(),
+        model: selectedModel,
+      };
+      setMessages((prev) => [...prev, errorMsg]);
+    } finally {
       setIsTyping(false);
-    }, 1500); // 1.5 seconds as response simulation
+    }
   };
-
   const headerProps: HeaderProps = {
     onOpenSidebar,
     onOpenSettings,
   };
-
-  const messageListProps: MessageListProps = {
+  const messageStackProps: MessageStackProps = {
     messages,
     isTyping,
     messagesEndRef,
   };
-
-  const inputProps: InputPŕops = {
+  const inputProps: InputProps = {
     handleSendMessage,
     textareaRef,
     input,
@@ -101,7 +124,7 @@ export default function Chat({ onOpenSidebar, onOpenSettings }: ChatProps) {
   return (
     <main className="flex-1 flex flex-col relative h-full">
       <Header {...headerProps} />
-      <MessageList {...messageListProps} />
+      <MessageStack {...messageStackProps} />
       <Input {...inputProps} />
     </main>
   );

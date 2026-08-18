@@ -1,4 +1,5 @@
 import { useState, useRef, useEffect } from "react";
+import { ChevronUp, ChevronDown } from "lucide-react";
 
 interface DropdownProps {
   selected: string;
@@ -27,14 +28,22 @@ export default function Dropdown({
   }, []);
 
   return (
-    <div className="relative" ref={dropdownRef} onClick={(e)=>e.preventDefault()}>
+    <div
+      className="relative"
+      ref={dropdownRef}
+      onClick={(e) => e.preventDefault()}
+    >
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="text-xs text-gray-400 cursor-pointer hover:text-gray-200 flex items-center gap-1"
       >
-        {selected} <span>{isOpen ? "⌃" : "⌄"}</span>
+        {selected}{" "}
+        {isOpen ? (
+          <ChevronUp className="w-4 h-4" />
+        ) : (
+          <ChevronDown className="w-4 h-4" />
+        )}
       </button>
-
       {isOpen && (
         <div className="absolute bottom-full mb-2 left-0 w-40 bg-[#2f2f2f] border border-gray-700 rounded-lg shadow-xl z-50 overflow-y-auto max-h-[500px]">
           {options.map((opt) => (

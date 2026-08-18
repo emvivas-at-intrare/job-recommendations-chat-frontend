@@ -1,14 +1,15 @@
 import type { RefObject } from "react";
-import Dropdown from "../../ui/Dropdown";
 import type {
   SyntheticEvent,
   ChangeEvent,
   Dispatch,
   SetStateAction,
 } from "react";
+import { openAiModels } from "../../../settings";
+import Dropdown from "../../ui/Dropdown";
 import { CircleFadingPlus, SendHorizontal } from "lucide-react";
 
-export interface InputPŕops {
+export interface InputProps {
   handleSendMessage: (
     e?: SyntheticEvent<HTMLFormElement, SubmitEvent>,
   ) => Promise<void>;
@@ -28,38 +29,7 @@ export default function Input({
   selectedModel,
   setSelectedModel,
   isTyping,
-}: InputPŕops) {
-  const models: string[] = [
-    "gpt-4-vision-preview",
-    "gpt-4o-2024-05-13",
-    "gpt-4o-mini-2024-07-18",
-    "gpt-4o-2024-08-06",
-    "o1-mini-2024-09-12",
-    "gpt-4o-2024-11-20",
-    "o1-2024-12-17",
-    "gpt-4o-nano",
-    "gpt-4o-mini",
-    "gpt-4o",
-    "o1-mini",
-    "o1-preview",
-    "o1",
-    "gpt-4.1-nano",
-    "gpt-4.1-mini",
-    "gpt-4.1",
-    "o3-mini",
-    "o3",
-    "gpt-5.3-codex",
-    "gpt-5-nano",
-    "gpt-5-mini",
-    "gpt-5.4-nano",
-    "gpt-5.4-mini",
-    "gpt-5.4",
-    "gpt-5.5",
-    "gpt-realtime-2.1",
-    "gpt-5.6-luna",
-    "gpt-5.6-terra",
-    "gpt-5.6-sol",
-  ];
+}: InputProps) {
   return (
     <div className="p-4 w-full max-w-4xl mx-auto">
       <form className="bg-[#2f2f2f] rounded-3xl p-2 flex flex-col gap-2 relative shadow-lg">
@@ -96,7 +66,7 @@ export default function Input({
           <div className="flex items-center gap-3">
             <Dropdown
               selected={selectedModel}
-              options={models}
+              options={openAiModels}
               onSelect={setSelectedModel}
             />
             <button
