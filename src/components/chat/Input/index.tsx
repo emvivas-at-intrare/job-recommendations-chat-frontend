@@ -7,7 +7,7 @@ import type {
 } from "react";
 import { openAiModels } from "../../../settings";
 import Dropdown from "../../ui/Dropdown";
-import { CircleFadingPlus, SendHorizontal } from "lucide-react";
+import { CircleFadingPlus, SendHorizontal, X } from "lucide-react";
 
 export interface InputProps {
   handleSendMessage: (
@@ -19,6 +19,8 @@ export interface InputProps {
   selectedModel: string;
   setSelectedModel: Dispatch<SetStateAction<string>>;
   isTyping: boolean;
+  file: File | null;
+  setFile: Dispatch<SetStateAction<File | null>>;
 }
 
 export default function Input({
@@ -29,9 +31,23 @@ export default function Input({
   selectedModel,
   setSelectedModel,
   isTyping,
+  file,
+  setFile,
 }: InputProps) {
   return (
     <div className="p-4 w-full max-w-4xl mx-auto">
+      {file && (
+        <div className="flex items-center gap-2 bg-[#2f2f2f] w-fit px-3 py-1.5 rounded-full text-xs text-gray-300 shadow-md my-4">
+          <span className="truncate max-w-[200px]">{file.name}</span>
+          <button
+            type="button"
+            onClick={() => setFile(null)}
+            className="hover:bg-gray-600 rounded-full p-0.5 transition-colors cursor-pointer"
+          >
+            <X className="w-3 h-3" />
+          </button>
+        </div>
+      )}
       <form className="bg-[#2f2f2f] rounded-3xl p-2 flex flex-col gap-2 relative shadow-lg">
         <textarea
           ref={textareaRef}
@@ -54,10 +70,13 @@ export default function Input({
               <input
                 type="file"
                 className="hidden"
+                accept=".txt,.csv,.md,.json" // Available format extensions
                 onChange={(e) => {
-                  const file = e.target.files?.[0];
-                  if (file) {
-                    console.log(file);
+                  const selectedFile = e.target.files?.[0];
+                  if (selectedFile) {
+                    setFile(selectedFile);
+                    // Reset input
+                    e.target.value = "";
                   }
                 }}
               />
@@ -72,7 +91,7 @@ export default function Input({
             <button
               type="submit"
               onClick={() => handleSendMessage()}
-              disabled={!input.trim() || isTyping}
+              disabled={(!input.trim() && !file) || isTyping}
               className="w-8 h-8 bg-white text-black rounded-full flex items-center justify-center hover:bg-gray-200 transition-colors disabled:opacity-50 cursor-pointer"
             >
               <SendHorizontal className="w-5 h-5" />

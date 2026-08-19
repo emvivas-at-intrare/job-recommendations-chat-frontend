@@ -35,6 +35,7 @@ export default function Chat({
   const [messages, setMessages] = useState<Message[]>(chatSession.messages);
   const [input, setInput] = useState<string>("");
   const [isTyping, setIsTyping] = useState(false);
+  const [file, setFile] = useState<File | null>(null);
   const [selectedModel, setSelectedModel] = useState<string>("gpt-5-nano");
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
@@ -69,11 +70,9 @@ export default function Chat({
       return [updatedCurrentSession, ...filteredSessions];
     });
   };
-
   const handleInputResize = (e: ChangeEvent<HTMLTextAreaElement>) => {
     const value = e.target.value;
     setInput(value);
-
     const textarea = textareaRef.current;
     if (textarea) {
       textarea.style.height = "auto";
@@ -85,11 +84,11 @@ export default function Chat({
   ) => {
     e?.preventDefault();
     const sanitizedInput: string = input.trim();
-    if (!sanitizedInput) return;
+    if (!sanitizedInput && !file) return;
     const newUserMessage: Message = {
       id: Date.now().toString(),
       role: "user",
-      content: sanitizedInput,
+      content: sanitizedInput || "Se ha adjuntado un archivo para el análisis.",
       timestamp: new Date().toISOString(),
     };
     const updatedMessages = [...messages, newUserMessage];
@@ -97,19 +96,37 @@ export default function Chat({
     updateGlobalChatSessions(updatedMessages);
     setInput("");
     setIsTyping(true);
+    const attachedFile = file;
+    setFile(null);
     if (textareaRef.current) {
       textareaRef.current.style.height = "auto";
     }
     try {
-      const response = await API.post<ChatResponseDTO>("/candidate-chat", {
-        model: selectedModel,
-        systemPrompt: localStorage.getItem("system-prompt") || "",
-        messages: updatedMessages.map(({ role, content, recommendations }) => ({
-          role,
-          content,
-          recommendations,
-        })),
-      });
+      // FormData
+      const formData = new FormData();
+      formData.append("model", selectedModel);
+      formData.append(
+        "systemPrompt",
+        localStorage.getItem("system-prompt") || "",
+      );
+      formData.append(
+        "messages",
+        JSON.stringify(
+          updatedMessages.map(({ role, content, recommendations }) => ({
+            role,
+            content,
+            recommendations,
+          })),
+        ),
+      );
+      if (attachedFile) {
+        formData.append("file", attachedFile);
+      }
+      // Axios (multipart/form-data)
+      const response = await API.post<ChatResponseDTO>(
+        "/candidate-chat",
+        formData,
+      );
       const data: ChatResponseDTO = response.data;
       const newAiMsg: Message = {
         id: (Date.now() + 1).toString(),
@@ -158,6 +175,8 @@ export default function Chat({
     selectedModel,
     setSelectedModel,
     isTyping,
+    file,
+    setFile,
   };
 
   return (
